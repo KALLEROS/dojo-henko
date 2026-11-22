@@ -1,0 +1,15 @@
+{
+  "name": "Dojo Henko · Shotokan Karate Do",
+  "short_name": "Dojo Henko",
+  "description": "Horarios, avisos y contacto de Dojo Henko en Chihuahua.",
+  "lang": "es-MX",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#141012",
+  "theme_color": "#141012",
+  "icons": [
+    { "src": "img/icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "img/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

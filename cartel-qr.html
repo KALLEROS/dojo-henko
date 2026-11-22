@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cartel QR · Dojo Henko</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  @page{size:letter;margin:0}
+  :root{--rosa:#F4DFE0;--tinta:#141012;--magenta:#C8124F;--suave:#5B3F46}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:#d9d2d3}
+  body{font-family:"Instrument Sans",system-ui,sans-serif;color:var(--tinta);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .hoja{width:8.5in;height:11in;margin:24px auto;background:var(--rosa);display:grid;grid-template-rows:auto 1fr auto;padding:.6in .7in .5in;position:relative;overflow:hidden;box-shadow:0 20px 50px -20px rgba(0,0,0,.4)}
+  .kanji{position:absolute;right:.35in;top:.5in;writing-mode:vertical-rl;font:700 1.5in/1 "Noto Serif JP",serif;color:#E6C3C7}
+  header{display:flex;align-items:center;gap:.3in;position:relative}
+  header img{width:2.2in;height:2.2in}
+  h1{font:700 .75in/0.95 "Chakra Petch",sans-serif;text-transform:uppercase;margin:0}
+  h1 span{display:block;font-size:.28in;letter-spacing:.14em;color:var(--magenta);margin-top:.1in;font-weight:600}
+  main{display:grid;justify-items:center;align-content:center;gap:.22in;text-align:center;position:relative}
+  .invita{font:700 .5in/1 "Chakra Petch",sans-serif;text-transform:uppercase;margin:0}
+  .sub{font-size:.2in;color:var(--suave);margin:0}
+  .qr{background:#fff;padding:.22in;border-radius:.2in;box-shadow:0 .1in .3in -.12in rgba(20,16,18,.45)}
+  .qr canvas,.qr img{display:block;width:3.4in!important;height:3.4in!important}
+  .escanea{display:inline-block;background:var(--magenta);color:#fff;font:700 .26in/1 "Chakra Petch",sans-serif;letter-spacing:.12em;text-transform:uppercase;padding:.14in .3in;border-radius:999px}
+  .url{font-size:.17in;color:var(--suave);margin:0}
+  footer{display:grid;grid-template-columns:1fr auto;gap:.2in;align-items:end;border-top:2px solid var(--tinta);padding-top:.18in;font-size:.17in}
+  footer b{font:700 .24in/1.1 "Chakra Petch",sans-serif;text-transform:uppercase}
+  .precio{text-align:right;font:700 .5in/1 "Chakra Petch",sans-serif}
+  .precio small{display:block;font:600 .15in/1.2 "Instrument Sans",sans-serif;color:var(--suave)}
+  .ayuda{max-width:8.5in;margin:0 auto 24px;font:15px/1.5 system-ui;color:#333;padding:0 16px}
+  @media print{html,body{background:none}.hoja{margin:0;box-shadow:none}.ayuda{display:none}}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700&text=%E5%8B%87%E6%B0%97&display=swap" rel="stylesheet">
+</head>
+<body>
+<p class="ayuda" style="margin-top:20px"><strong>Para imprimir:</strong> Ctrl + P, tamaño carta, márgenes "ninguno" y activa "gráficos de fondo". El QR sale de <code>direccion_publica</code> en config.js.</p>
+<div class="hoja">
+  <span class="kanji" aria-hidden="true">勇気</span>
+  <header>
+    <img src="img/logo.png" alt="Logo de Dojo Henko">
+    <h1 id="nombre">Dojo Henko<span id="estilo">Shotokan Karate Do</span></h1>
+  </header>
+  <main>
+    <p class="invita">Te invitamos a entrenar</p>
+    <p class="sub">Niños desde 4 años, jóvenes y adultos</p>
+    <div class="qr" id="qr"></div>
+    <span class="escanea">Escanéame</span>
+    <p class="url" id="url"></p>
+  </main>
+  <footer>
+    <div>
+      <b id="direccion">Comercial Vallarta 5904, Local 15</b><br>
+      Lunes a viernes, 5:00 a 9:00 pm · WhatsApp <span id="tel">614 511 8999</span>
+    </div>
+    <div class="precio"><small>Mensualidad</small>$<span id="precio">700</span></div>
+  </footer>
+</div>
+<script src="config.js"></script>
+<script src="datos-respaldo.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  const g = (window.DOJO_RESPALDO || {}).general || {};
+  const poner = (id, v) => { if (v) document.getElementById(id).firstChild.textContent = v; };
+  poner("nombre", g.nombre); document.getElementById("estilo").textContent = g.estilo || "Shotokan Karate Do";
+  poner("direccion", g.direccion); poner("precio", g.precio);
+  const t = String(g.telefono || "").replace(/\D/g, "");
+  if (t.length === 10) document.getElementById("tel").textContent = `${t.slice(0,3)} ${t.slice(3,6)} ${t.slice(6)}`;
+  const url = (window.DOJO_CONFIG || {}).direccion_publica || location.href.replace(/cartel-qr\.html.*$/, "");
+  document.getElementById("url").textContent = url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  new QRCode(document.getElementById("qr"), { text: url, width: 680, height: 680, colorDark: "#141012", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H });
+</script>
+</body>
+</html>

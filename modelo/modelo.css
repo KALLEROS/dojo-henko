@@ -1,0 +1,45 @@
+/* Visor del modelo del dojo. Usa los tonos del kit (iso.css) en tema claro
+   y los colores de la página (rosa palo, negro, magenta). */
+#modelo-dojo .iso[data-theme="light"]{
+  --anatomy-paper:#FFFAFA;--anatomy-card:#FFFAFA;--anatomy-face:#ffffff;--anatomy-top:#ffffff;
+  --anatomy-hi:#2a2326;--anatomy-mid:#8c7a7e;--anatomy-lo:#b9a8ab;--anatomy-faint:#dccdd0;
+  --anatomy-dot:#2a2326;--anatomy-halo:#7a5a60;--anatomy-halo-opacity:.28;
+  --anatomy-mono:"Instrument Sans", system-ui, sans-serif;
+}
+.md-card{position:relative;background:var(--anatomy-card);border-radius:14px;box-shadow:0 18px 40px -28px rgba(20,16,18,.45),0 0 0 1px rgba(20,16,18,.08);overflow:hidden}
+.md-esquinas{position:absolute;inset:14px 16px auto;display:flex;justify-content:space-between;pointer-events:none;z-index:2;font:600 .72rem/1 "Instrument Sans",system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8c7a7e}
+.md-fig{color:#2a2326}
+.md-esquinas span{background:rgba(255,250,250,.86);padding:4px 7px;border-radius:6px}
+.md-escenario{position:relative;aspect-ratio:10/7;cursor:grab;touch-action:pan-y;user-select:none;-webkit-user-select:none;outline:none}
+.md-escenario:focus-visible{box-shadow:inset 0 0 0 3px #C8124F}
+.md-escenario.md-arrastrando{cursor:grabbing}
+.md-lienzo,.md-lienzo svg{width:100%;height:100%;display:block}
+.md-escenario,.md-lienzo{overflow:hidden}.md-lienzo svg.iso-svg{overflow:hidden}
+.md-card.md-girando .md-lienzo{opacity:0;transform:scale(.985)}
+.md-lienzo{transition:opacity .14s cubic-bezier(.16,1,.3,1),transform .14s cubic-bezier(.16,1,.3,1)}
+.modelo-svg .pz{cursor:pointer}
+.modelo-svg .pz.md-sel{filter:drop-shadow(0 0 1.5px #C8124F) drop-shadow(0 0 1.5px #C8124F)}
+.md-herramientas{position:absolute;right:12px;top:42px;z-index:2;display:flex;flex-direction:column;gap:6px;padding:6px;border-radius:12px;background:rgba(255,250,250,.88);box-shadow:0 6px 18px -10px rgba(20,16,18,.5),0 0 0 1px rgba(20,16,18,.08);backdrop-filter:blur(6px)}
+.md-herramientas button{width:40px;height:40px;display:grid;place-items:center;border:0;border-radius:9px;background:transparent;color:#141012;cursor:pointer;transition:background-color .15s}
+.md-herramientas button:hover{background:#F4DFE0}
+.md-herramientas button:active{background:#EBCBCE}
+.md-herramientas button:focus-visible{outline:3px solid #C8124F;outline-offset:1px}
+.md-herramientas svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.md-sep{height:1px;background:rgba(20,16,18,.12);margin:2px 6px}
+.md-pie{display:flex;align-items:center;justify-content:space-between;gap:12px 20px;flex-wrap:wrap;padding:12px 16px 14px;border-top:1px solid rgba(20,16,18,.08)}
+.md-escala{display:flex;align-items:center;gap:10px;font:600 .85rem/1 "Instrument Sans",system-ui,sans-serif;font-variant-numeric:tabular-nums;color:#141012}
+.md-barra{display:block;height:8px;width:60px;border:1.5px solid #141012;border-top:0;transition:width .12s}
+.md-lectura{margin:0;font-size:.92rem;color:#5B3F46;font-variant-numeric:tabular-nums;text-align:right;flex:1 1 220px}
+.md-lectura b{color:#141012;font-weight:600}
+.md-ayuda{margin:12px 0 0;font-size:.92rem;color:#5B3F46;max-width:62ch}
+.md-ayuda kbd{font:600 .8rem/1 "Instrument Sans",system-ui,sans-serif;padding:3px 6px;border-radius:5px;background:#FFFAFA;box-shadow:0 0 0 1px rgba(20,16,18,.15)}
+@media (max-width:560px){
+  .md-herramientas{position:static;flex-direction:row;justify-content:center;width:max-content;margin:4px auto 10px;box-shadow:0 0 0 1px rgba(20,16,18,.1)}
+  .md-sep{width:1px;height:auto;margin:6px 2px}
+  .md-herramientas button{width:38px;height:38px}
+  .md-lectura{text-align:left}
+}
+@media (prefers-reduced-motion:reduce){.md-lienzo{transition:none}}
+/* sección en la página */
+.modelo{background:var(--rosa-2, #EBCBCE)}
+.modelo-intro{color:var(--texto-suave, #5B3F46);margin:-12px 0 24px;max-width:52ch}

@@ -1,0 +1,8 @@
+# Configuración local de Claude
+.claude/
+
+# Fotos originales y de referencia: no se publican
+# (varias tienen alumnos menores; se suben solo con permiso de los papás)
+img/*-*-*-*-*.jpg
+img/logo.jpg
+/*-*-*-*-*.jpg
