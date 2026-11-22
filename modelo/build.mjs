@@ -15,8 +15,10 @@ const M = 20; // unidades del dibujo por metro
 const W = 1000, H = 700;
 const ELEV = 33;
 const T = 0.15; // grosor de muro (m)
-const ROOM = { L: 13.2, W: 8, H: 2.8 }; // salón principal
-const ALC = { x0: 13.2, x1: 15.4, y0: 0, y1: 3 }; // pasillo del fondo (bodega y baño)
+const ENTRADA = 1.2; // franja de loseta junto al vidrio (m) — supuesto
+const TAT = 7; // tatami de 7 × 7 m, de pared a pared
+const ROOM = { L: ENTRADA + TAT, W: TAT, H: 2.8 }; // salón principal
+const ALC = { x0: ENTRADA + TAT, x1: ENTRADA + TAT + 2.2, y0: 0, y1: 2.6 }; // pasillo del fondo (bodega y baño) — supuesto
 const CUT = 0.55; // altura de los muros recortados (los que quedan frente a la cámara)
 const AZIMUTHS = [225, 315, 45, 135];
 
@@ -96,16 +98,20 @@ function buildView(azimuth, scale) {
     for (let y = y0 + 0.5; y < y1 - 0.01; y += 0.5) out += seg([x0, y, 0], [x1, y, 0], "ln-tile");
     return out;
   };
-  back.push(tiles(0, 0, 1.2, ROOM.W), tiles(12.2, 0, ALC.x1, ALC.y1));
+  back.push(tiles(0, 0, ENTRADA, ROOM.W), tiles(ALC.x0, 0, ALC.x1, ALC.y1));
 
   // ---------- tatami (cuadros de 1 m, 2.5 cm de grueso) ----------
   const MT = 0.025;
-  back.push(`<g ${piece("Tatami", "Cuadros de 1 × 1 m, 2.5 cm de grueso")}>`);
-  back.push(S(box3(1.2, 0, 0, 12.2, ROOM.W, MT), "red", { tone: "lo" }));
-  back.push(S(box3(12.2, 3, 0, 13.2, ROOM.W, MT), "red", { tone: "lo" }));
-  back.push(quad([[2.2, 2, MT], [11.2, 2, MT], [11.2, 7, MT], [2.2, 7, MT]], "fl-blue"));
-  back.push(quad([[8.2, 3, MT], [9.2, 3, MT], [9.2, 4, MT], [8.2, 4, MT]], "fl-red"));
-  back.push(quad([[4.2, 5, MT], [5.2, 5, MT], [5.2, 6, MT], [4.2, 6, MT]], "fl-red"));
+  const X0 = ENTRADA, X1 = ENTRADA + TAT; // tatami a lo largo
+  const B0 = [X0 + 1, 1], B1 = [X1 - 1, TAT - 1]; // centro azul de 5 × 5 (borde rojo de un cuadro)
+  back.push(`<g ${piece("Tatami", "7 × 7 m · cuadros de 1 × 1 m · borde rojo de un cuadro")}>`);
+  back.push(S(box3(X0, 0, 0, X1, ROOM.W, MT), "red", { tone: "lo" }));
+  back.push(quad([[B0[0], B0[1], MT], [B1[0], B0[1], MT], [B1[0], B1[1], MT], [B0[0], B1[1], MT]], "fl-blue"));
+  // 21 azules + 4 rojos dentro del centro (posición de los rojos: supuesto, en rombo)
+  for (const [i, j] of [[2, 1], [1, 2], [3, 2], [2, 3]]) {
+    const x = B0[0] + i, y = B0[1] + j;
+    back.push(quad([[x, y, MT], [x + 1, y, MT], [x + 1, y + 1, MT], [x, y + 1, MT]], "fl-red"));
+  }
   // dientes del rompecabezas en el borde rojo/azul
   const teeth = (a, b) => {
     const [x0, y0] = a, [x1, y1] = b;
@@ -120,16 +126,15 @@ function buildView(azimuth, scale) {
     }
     return k.pathOf(out.map((p) => at(pt(...p))));
   };
-  back.push(L([teeth([2.2, 2], [11.2, 2]), teeth([11.2, 2], [11.2, 7]), teeth([11.2, 7], [2.2, 7]), teeth([2.2, 7], [2.2, 2])].join(""), "ln-mat"));
+  back.push(L([teeth([B0[0], B0[1]], [B1[0], B0[1]]), teeth([B1[0], B0[1]], [B1[0], B1[1]]), teeth([B1[0], B1[1]], [B0[0], B1[1]]), teeth([B0[0], B1[1]], [B0[0], B0[1]])].join(""), "ln-mat"));
   // juntas de 1 m
   let joints = "";
-  for (let x = 2.2; x < 12.2; x += 1) joints += seg([x, 0, MT], [x, ROOM.W, MT], "ln-joint");
-  for (let y = 1; y < ROOM.W; y += 1) joints += seg([1.2, y, MT], [12.2, y, MT], "ln-joint");
-  for (let y = 4; y < ROOM.W; y += 1) joints += seg([12.2, y, MT], [13.2, y, MT], "ln-joint");
+  for (let x = X0 + 1; x < X1 - 0.01; x += 1) joints += seg([x, 0, MT], [x, ROOM.W, MT], "ln-joint");
+  for (let y = 1; y < ROOM.W - 0.01; y += 1) joints += seg([X0, y, MT], [X1, y, MT], "ln-joint");
   back.push(joints);
   // textura de las placas (rombos tenues), solo en algunos cuadros para no ensuciar
   let weave = "";
-  for (let x = 1.2; x < 12.2; x += 1) for (let y = 0; y < ROOM.W; y += 1) {
+  for (let x = X0; x < X1 - 0.01; x += 1) for (let y = 0; y < ROOM.W - 0.01; y += 1) {
     for (let i = 1; i < 5; i++) {
       const t = i / 5;
       weave += k.pathOf([at(pt(x + t, y + 0.04, MT)), at(pt(x + t, y + 0.96, MT))]);
@@ -140,15 +145,15 @@ function buildView(azimuth, scale) {
 
   // escalera de coordinación sobre el borde rojo
   {
-    const y0 = 0.45, y1 = 0.95, x0 = 2.6, x1 = 7.4;
+    const y0 = 0.25, y1 = 0.75, x0 = ENTRADA + 1.3, x1 = ENTRADA + 5.8;
     let s = S(box3(x0, y0 - 0.02, MT, x1, y0 + 0.02, MT + 0.01), "black", { flat: true }) + S(box3(x0, y1 - 0.02, MT, x1, y1 + 0.02, MT + 0.01), "black", { flat: true });
     for (let x = x0 + 0.1; x < x1; x += 0.45) s += S(box3(x - 0.025, y0, MT + 0.002, x + 0.025, y1, MT + 0.012), "yellow", { flat: true });
-    back.push(`<g ${piece("Escalera de coordinación", "4.8 m, peldaños cada 45 cm")}>${s}</g>`);
+    back.push(`<g ${piece("Escalera de coordinación", "4.5 m, peldaños cada 45 cm")}>${s}</g>`);
   }
   // aros en el piso, junto a la pared del fondo
   {
     let s = "";
-    [[12.55, 5.9, 0.33, "magenta"], [12.7, 6.55, 0.3, "green"], [12.45, 7.2, 0.32, "orange"]].forEach(([x, y, r, c]) => {
+    [[X1 - 0.5, 3.4, 0.33, "magenta"], [X1 - 0.45, 4.1, 0.3, "green"], [X1 - 0.55, 4.8, 0.32, "orange"]].forEach(([x, y, r, c]) => {
       s += L(k.ring(m(x), m(y), m(r), m(MT + 0.01), P, 48), `ln-hoop hoop-${c}`);
     });
     back.push(`<g ${piece("Aros de agilidad", "60–66 cm de diámetro")}>${s}</g>`);
@@ -162,7 +167,7 @@ function buildView(azimuth, scale) {
     let s = "";
     if (name === "front") {
       // fachada de vidrio con canceles de aluminio
-      const posts = [0, 1.7, 3.4, 4.5, 5.5, 6.8, ROOM.W];
+      const posts = [0, 1.5, 3.0, 4.0, 5.5, ROOM.W];
       const glassTop = isFar ? 2.35 : CUT;
       s += S(box3(-T, 0, 0, 0, ROOM.W, 0.12), "steel", { tone: "lo" });
       for (let i = 0; i < posts.length - 1; i++) {
@@ -176,9 +181,9 @@ function buildView(azimuth, scale) {
       }
       for (const y of posts) s += S(box3(-T, y - 0.04, 0.12, 0, y + 0.04, glassTop), "steel", { tone: "lo" });
       // puerta: marco más grueso y jaladera
-      s += S(box3(-T, 4.5, 0.12, -0.02, 4.58, glassTop), "steel", { tone: "lo" }) + S(box3(-T, 5.42, 0.12, -0.02, 5.5, glassTop), "steel", { tone: "lo" });
+      s += S(box3(-T, 3.0, 0.12, -0.02, 3.08, glassTop), "steel", { tone: "lo" }) + S(box3(-T, 3.92, 0.12, -0.02, 4.0, glassTop), "steel", { tone: "lo" });
       if (isFar) {
-        s += S(box3(-0.02, 5.2, 0.95, 0.03, 5.24, 1.25), "steel");
+        s += S(box3(-0.02, 3.72, 0.95, 0.03, 3.76, 1.25), "steel");
         s += S(box3(-T, 0, 2.35, 0, ROOM.W, ROOM.H), "wall", { tone: "lo" });
         s += S(box3(-T, 0, 2.3, 0, ROOM.W, 2.35), "steel", { tone: "lo" });
       } else {
@@ -231,7 +236,7 @@ function buildView(azimuth, scale) {
   // ---------- muro derecho: costales, BOB, peras de reflejo, bocina ----------
   if (far("right")) {
     // contactos
-    for (const x of [3.2, 9.0]) back.push(S(box3(x, ROOM.W - 0.012, 0.3, x + 0.08, ROOM.W, 0.42), "white"));
+    for (const x of [2.4, 6.2]) back.push(S(box3(x, ROOM.W - 0.012, 0.3, x + 0.08, ROOM.W, 0.42), "white"));
   }
   const hangingBag = (x, color, name) => {
     const wy = ROOM.W, out = [];
@@ -257,8 +262,8 @@ function buildView(azimuth, scale) {
     out.push(fixed, `<g data-swing data-dir="${k.axisVector(P, [0, -1, 0]).map((v) => v.toFixed(3)).join(",")}" ${piece(name, "90 cm de alto, colgado a 1 m del piso")}>${bag}</g>`);
     put([x, cy, 1.4], out.join(""));
   };
-  hangingBag(11.4, "blue", "Costal colgante azul");
-  hangingBag(10.2, "red", "Costal colgante rojo");
+  hangingBag(ROOM.L - 0.7, "blue", "Costal colgante azul");
+  hangingBag(ROOM.L - 1.7, "red", "Costal colgante rojo");
 
   const standingBase = (x, y) => {
     let s = S(cyl(x, y, 0.3, 0, 0.42, 48), "black", { inner: L(k.sideArc(m(x), m(y), m(0.3), m(0.06), P, 40), "ln-black") });
@@ -268,7 +273,7 @@ function buildView(azimuth, scale) {
   };
   // costal de pie
   {
-    const x = 7.6, y = ROOM.W - 0.45;
+    const x = ROOM.L - 3.7, y = ROOM.W - 0.45;
     let s = standingBase(x, y);
     s += S(cyl(x, y, 0.21, 0.42, 0.5, 40), "black");
     const F = G.frameAlong(pt(x, y, 0.5), [0, 0, 1]);
@@ -287,7 +292,7 @@ function buildView(azimuth, scale) {
   }
   // BOB (maniquí de golpeo) con cinta naranja
   {
-    const x = 8.8, y = ROOM.W - 0.45;
+    const x = ROOM.L - 2.7, y = ROOM.W - 0.45;
     let base = standingBase(x, y);
     base += S(cyl(x, y, 0.21, 0.42, 0.5, 40), "black");
     let top = S(cyl(x, y, 0.055, 0.5, 1.13, 20), "black");
@@ -319,18 +324,18 @@ function buildView(azimuth, scale) {
     ball += S(G.sphereOf(pt(x, py - 0.26, 1.54), m(0.035), P), "black");
     put([x, py, 1.0], `<g ${piece("Pera de reflejo", "Resorte a 1.5 m de altura")}>${s}<g data-swing data-fast data-dir="${k.axisVector(P, [1, -0.6, 0.2]).map((v) => v.toFixed(3)).join(",")}">${ball}</g></g>`);
   };
-  reflex(6.1, "red");
-  reflex(5.2, "black");
+  reflex(ROOM.L - 4.7, "red");
+  reflex(ROOM.L - 5.5, "black");
   // bocina
   {
-    const x = 3.0, y = ROOM.W - 0.3;
+    const x = ENTRADA + 0.7, y = ROOM.W - 0.3;
     let s = S(rbox(x - 0.15, y - 0.16, 0, x + 0.15, y + 0.16, 0.6, 0.02), "black");
     if (visible([0, -1])) s += L(k.sideRing(pt(x, y - 0.165, 0.38), m(0.09), "y", P, 28) + k.sideRing(pt(x, y - 0.165, 0.38), m(0.05), "y", P, 20) + k.sideRing(pt(x, y - 0.165, 0.18), m(0.03), "y", P, 16), "ln-steel");
     put([x, y, 0.3], `<g ${piece("Bocina", "60 cm de alto")}>${s}</g>`);
   }
   // ventilador de pedestal y planta en la entrada
   {
-    const x = 0.7, y = 6.9;
+    const x = 0.7, y = ROOM.W - 1.1;
     let s = S(cyl(x, y, 0.2, 0, 0.04, 32), "black") + S(cyl(x, y, 0.025, 0.04, 1.15, 14), "steel");
     s += S(rbox(x - 0.08, y - 0.06, 1.12, x + 0.04, y + 0.06, 1.28, 0.05), "black");
     const c = pt(x + 0.07, y, 1.22);
@@ -338,7 +343,7 @@ function buildView(azimuth, scale) {
     for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; grille += k.segment([c[0], c[1] + Math.cos(a) * m(0.06), c[2] + Math.sin(a) * m(0.06)], [c[0], c[1] + Math.cos(a) * m(0.23), c[2] + Math.sin(a) * m(0.23)], P); }
     s += L(grille, "ln-steel");
     put([x, y, 0.6], `<g ${piece("Ventilador", "Pedestal de 1.4 m")}>${s}</g>`);
-    const px = 0.5, py = 7.6;
+    const px = 0.5, py = ROOM.W - 0.4;
     let p = S(cyl(px, py, 0.13, 0, 0.22, 28), "terracotta") + S(cyl(px, py, 0.14, 0.2, 0.24, 28), "terracotta");
     let leaves = "";
     for (let i = 0; i < 9; i++) {
@@ -356,70 +361,70 @@ function buildView(azimuth, scale) {
   if (far("back")) {
     const wx = ROOM.L;
     // ventana tapiada de madera y rejilla de ventilación
-    back.push(S(box3(wx - 0.04, 4.95, 1.5, wx, 5.75, 2.48), "wall") + S(box3(wx - 0.03, 5.02, 1.57, wx, 5.68, 2.41), "wood"));
+    back.push(S(box3(wx - 0.04, 3.75, 1.5, wx, 4.55, 2.48), "wall") + S(box3(wx - 0.03, 3.82, 1.57, wx, 4.48, 2.41), "wood"));
     let planks = "";
-    for (let y = 5.15; y < 5.68; y += 0.13) planks += seg([wx - 0.03, y, 1.57], [wx - 0.03, y, 2.41], "ln-wood");
+    for (let y = 3.95; y < 4.48; y += 0.13) planks += seg([wx - 0.03, y, 1.57], [wx - 0.03, y, 2.41], "ln-wood");
     back.push(planks);
-    back.push(S(box3(wx - 0.02, 6.4, 2.45, wx, 7.05, 2.62), "white"));
+    back.push(S(box3(wx - 0.02, 5.3, 2.45, wx, 5.95, 2.62), "white"));
     let vent = "";
-    for (let z = 2.48; z < 2.6; z += 0.03) vent += seg([wx - 0.02, 6.45, z], [wx - 0.02, 7.0, z], "ln-steel");
+    for (let z = 2.48; z < 2.6; z += 0.03) vent += seg([wx - 0.02, 5.35, z], [wx - 0.02, 5.9, z], "ln-steel");
     back.push(vent);
   }
   if (far("back")) {
     const wx = ROOM.L;
     let s = "";
-    const brackets = [3.6, 5.1, 6.6, 7.8];
+    const brackets = [3.0, 4.2, 5.4, 6.6];
     for (const y of brackets) {
       if (far("back")) s += S(box3(wx - 0.02, y - 0.04, 0.85, wx, y + 0.04, 1.32), "black");
       s += S(box3(wx - 0.13, y - 0.015, 0.92, wx - 0.02, y + 0.015, 0.97), "black") + S(box3(wx - 0.13, y - 0.015, 1.17, wx - 0.02, y + 0.015, 1.22), "black");
     }
     for (const z of [0.945, 1.195]) {
-      const F = G.frameAlong(pt(wx - 0.12, 3.45, z), [0, 1, 0]);
-      s += S(G.solidOf([[0, m(0.022)], [m(4.5), m(0.022)]], F, P, { steps: 16 }), "black");
+      const F = G.frameAlong(pt(wx - 0.12, 2.85, z), [0, 1, 0]);
+      s += S(G.solidOf([[0, m(0.022)], [m(3.95), m(0.022)]], F, P, { steps: 16 }), "black");
     }
     // ligas de resistencia colgando
-    const bands = [[3.9, 1.195, "red"], [4.25, 0.945, "black"], [4.6, 1.195, "red"], [5.5, 0.945, "green"], [5.9, 1.195, "red"], [6.3, 0.945, "black"], [7.0, 1.195, "red"], [7.35, 0.945, "black"]];
+    const bands = [[3.25, 1.195, "red"], [3.55, 0.945, "black"], [3.85, 1.195, "red"], [4.55, 0.945, "green"], [4.9, 1.195, "red"], [5.2, 0.945, "black"], [5.8, 1.195, "red"], [6.15, 0.945, "black"]];
     let bandSvg = "";
     for (const [y, z, c] of bands) {
       const a = pt(wx - 0.12, y, z - 0.02), b = pt(wx - 0.1, y + 0.06, 0.12);
       bandSvg += L(k.pathOf([a, [a[0] + m(0.03), a[1] + m(0.02), (a[2] + b[2]) / 2], b].map(at)), `ln-band band-${c}`);
       bandSvg += S(cyl(wx - 0.1, y + 0.06, 0.025, 0.03, 0.14, 12), "black");
     }
-    put([wx - 0.1, 5.6, 1.0], `<g ${piece("Barra doble con ligas", "Barras a 95 cm y 1.2 m, 4.5 m de largo")}>${s}${bandSvg}</g>`);
+    put([wx - 0.1, 4.8, 1.0], `<g ${piece("Barra doble con ligas", "Barras a 95 cm y 1.2 m, unos 4 m de largo")}>${s}${bandSvg}</g>`);
     // extintor
     let e = "";
-    if (far("back")) e += S(box3(wx - 0.02, 3.2, 1.38, wx, 3.34, 1.46), "black");
-    e += S(cyl(wx - 0.08, 3.27, 0.065, 0.95, 1.42, 24), "red", { inner: L(k.sideArc(m(wx - 0.08), m(3.27), m(0.065), m(1.3), P, 20), "ln-red") });
-    e += S(cyl(wx - 0.08, 3.27, 0.03, 1.42, 1.5, 14), "black");
-    e += L(k.pathOf([pt(wx - 0.08, 3.25, 1.47), pt(wx - 0.16, 3.2, 1.3), pt(wx - 0.15, 3.18, 1.05)].map(at)), "ln-black hose");
-    put([wx - 0.08, 3.27, 1.2], `<g ${piece("Extintor", "Junto al pasillo del fondo")}>${e}</g>`);
+    if (far("back")) e += S(box3(wx - 0.02, 2.66, 1.38, wx, 2.8, 1.46), "black");
+    e += S(cyl(wx - 0.08, 2.73, 0.065, 0.95, 1.42, 24), "red", { inner: L(k.sideArc(m(wx - 0.08), m(2.73), m(0.065), m(1.3), P, 20), "ln-red") });
+    e += S(cyl(wx - 0.08, 2.73, 0.03, 1.42, 1.5, 14), "black");
+    e += L(k.pathOf([pt(wx - 0.08, 2.71, 1.47), pt(wx - 0.16, 2.66, 1.3), pt(wx - 0.15, 2.64, 1.05)].map(at)), "ln-black hose");
+    put([wx - 0.08, 2.73, 1.2], `<g ${piece("Extintor", "Junto al pasillo del fondo")}>${e}</g>`);
   }
   {
     const wx = ROOM.L;
     // escudos de pateo recargados
     let sh = "";
-    for (const [y, c] of [[6.85, "red"], [7.25, "red"]]) {
+    for (const [y, c] of [[5.75, "red"], [6.15, "red"]]) {
       sh += S(rbox(wx - 0.16, y - 0.19, 0, wx - 0.02, y + 0.19, 0.62, 0.04), c, { inner: L(k.sideSeam({ x: m(wx - 0.16), y: m(y - 0.19), w: m(0.14), d: m(0.38), r: m(0.04) }, m(0.31), P, 6), `ln-${c}`) });
     }
-    put([wx - 0.09, 7.05, 0.3], `<g ${piece("Escudos de pateo", "62 × 38 cm")}>${sh}</g>`);
+    put([wx - 0.09, 5.95, 0.3], `<g ${piece("Escudos de pateo", "62 × 38 cm")}>${sh}</g>`);
     // churros de alberca y conos apilados en la esquina
     let n = "";
-    [[7.75, "yellow"], [7.62, "orange"], [7.82, "green"], [7.5, "yellow"]].forEach(([y, c], i) => { n += S(cyl(wx - 0.12 - (i % 2) * 0.1, y, 0.045, 0, 1.45 - i * 0.08, 18), c); });
-    put([wx - 0.15, 7.65, 0.7], `<g ${piece("Churros de espuma", "1.4 m, para esquivar")}>${n}</g>`);
+    [[6.75, "yellow"], [6.62, "orange"], [6.82, "green"], [6.5, "yellow"]].forEach(([y, c], i) => { n += S(cyl(wx - 0.12 - (i % 2) * 0.1, y, 0.045, 0, 1.45 - i * 0.08, 18), c); });
+    put([wx - 0.15, 6.65, 0.7], `<g ${piece("Churros de espuma", "1.4 m, para esquivar")}>${n}</g>`);
   }
 
   // ---------- pared izquierda: banner con el logo, lona enrollable, cuadros ----------
   if (far("left")) {
-    const bx0 = 5.6, bx1 = 7.5, bz0 = 0.75, bz1 = 2.65, yy = 0.004;
+    const bx0 = ENTRADA + 2.5, bx1 = ENTRADA + 4.5, bz0 = 0.65, bz1 = 2.65, yy = 0.004; // 2 × 2 m
     let s = quad([[bx0, yy, bz0], [bx1, yy, bz0], [bx1, yy, bz1], [bx0, yy, bz1]], "banner");
     const o = at(pt(bx0 + 0.15, yy, bz1 - 0.2)), u = at(pt(bx1 - 0.15, yy, bz1 - 0.2)), v = at(pt(bx0 + 0.15, yy, bz0 + 0.2));
     s += `<image href="img/logo.png" x="0" y="0" width="1" height="1" preserveAspectRatio="none" transform="matrix(${(u[0] - o[0]).toFixed(3)} ${(u[1] - o[1]).toFixed(3)} ${(v[0] - o[0]).toFixed(3)} ${(v[1] - o[1]).toFixed(3)} ${o[0].toFixed(2)} ${o[1].toFixed(2)})"/>`;
     s += k.dotsSvg([at(pt(bx0 + 0.04, yy, bz1 - 0.04)), at(pt(bx1 - 0.04, yy, bz1 - 0.04))], { size: 0.6, tone: "mid" });
-    back.push(`<g ${piece("Banner del dojo", "1.9 × 1.9 m, Shotokan Karate Do")}>${s}</g>`);
+    back.push(`<g ${piece("Banner del dojo", "2 × 2 m, Shotokan Karate Do")}>${s}</g>`);
   }
   {
     // lona enrollable (roll-up)
-    const x0 = 11.0, x1 = 11.8, y = 0.32;
+    const x0 = ROOM.L - 1.0, x1 = ROOM.L - 0.2, y = 0.32;
     let s = S(rbox(x0 - 0.03, y - 0.09, 0, x1 + 0.03, y + 0.09, 0.07, 0.03), "steel");
     s += S(box3(x0, y - 0.008, 0.07, x1, y + 0.008, 2.0), "white");
     const faceY = visible([0, 1]) ? y + 0.009 : visible([0, -1]) ? y - 0.009 : null;
@@ -435,13 +440,13 @@ function buildView(azimuth, scale) {
     put([(x0 + x1) / 2, y, 1.0], `<g ${piece("Lona enrollable", "80 cm × 2 m, información del dojo")}>${s}</g>`);
     // cuadros recargados en el muro
     let f = "";
-    for (const [x, h] of [[10.2, 0.55], [10.45, 0.48]]) f += S(box3(x, 0.02, 0, x + 0.4, 0.05, h), "black") + S(box3(x + 0.04, 0.05, 0.04, x + 0.36, 0.052, h - 0.04), "white", { flat: true });
-    put([10.4, 0.05, 0.25], `<g ${piece("Diplomas", "Por colgar")}>${f}</g>`);
+    for (const [x, h] of [[ROOM.L - 2.0, 0.55], [ROOM.L - 1.75, 0.48]]) f += S(box3(x, 0.02, 0, x + 0.4, 0.05, h), "black") + S(box3(x + 0.04, 0.05, 0.04, x + 0.36, 0.052, h - 0.04), "white", { flat: true });
+    put([ROOM.L - 1.8, 0.05, 0.25], `<g ${piece("Diplomas", "Por colgar")}>${f}</g>`);
   }
 
   // ---------- pasillo del fondo: estante de equipo y puerta ----------
   {
-    const x0 = 14.85, x1 = 15.35, y0 = 0.25, y1 = 1.35;
+    const x0 = ALC.x1 - 0.55, x1 = ALC.x1 - 0.05, y0 = 0.2, y1 = 1.3;
     let s = "";
     const posts = [[x0, y0], [x1, y0], [x0, y1], [x1, y1]].sort((a, b) => depth(pt(a[0], a[1], 0)) - depth(pt(b[0], b[1], 0)));
     const backPosts = posts.slice(0, 3), frontPost = posts.slice(3);
@@ -461,8 +466,8 @@ function buildView(azimuth, scale) {
     for (const [x, y] of frontPost) s += S(box3(x - 0.015, y - 0.015, 0, x + 0.015, y + 0.015, 1.85), "black");
     put([(x0 + x1) / 2, (y0 + y1) / 2, 0.9], `<g ${piece("Estante de equipo", "Gis, guantes, petos y pelotas")}>${s}</g>`);
     if (far("alcBack")) {
-      back.push(S(box3(ALC.x1 - 0.03, 1.65, 0, ALC.x1, 2.6, 2.12), "wall") + S(box3(ALC.x1 - 0.025, 1.72, 0, ALC.x1, 2.53, 2.06), "white"));
-      back.push(k.dotsSvg([at(pt(ALC.x1 - 0.03, 1.82, 1.0))], { size: 1, tone: "hi" }));
+      back.push(S(box3(ALC.x1 - 0.03, 1.5, 0, ALC.x1, 2.45, 2.12), "wall") + S(box3(ALC.x1 - 0.025, 1.57, 0, ALC.x1, 2.38, 2.06), "white"));
+      back.push(k.dotsSvg([at(pt(ALC.x1 - 0.03, 1.67, 1.0))], { size: 1, tone: "hi" }));
     }
   }
 
@@ -493,17 +498,17 @@ function buildView(azimuth, scale) {
     s += post(sorted[1]);
     put([x, y, 0.4], `<g ${piece("Valla de agilidad", `${Math.round(h * 100)} cm de alto`)}>${s}</g>`);
   };
-  hurdle(9.6, 2.9, "y", 0.45);
-  hurdle(10.3, 2.9, "y", 0.6);
-  hurdle(11.0, 2.9, "y", 0.45);
-  hurdle(9.95, 4.0, "y", 0.3);
-  hurdle(10.65, 4.0, "y", 0.3);
+  hurdle(ROOM.L - 2.6, 1.75, "y", 0.45);
+  hurdle(ROOM.L - 1.95, 1.75, "y", 0.6);
+  hurdle(ROOM.L - 1.3, 1.75, "y", 0.45);
+  hurdle(ROOM.L - 2.3, 2.85, "y", 0.3);
+  hurdle(ROOM.L - 1.65, 2.85, "y", 0.3);
   const cone = (x, y) => {
     const F = G.frameAlong(pt(x, y, MT), [0, 0, 1]);
     const s = S(G.solidOf([[0, m(0.1)], [m(0.02), m(0.1)], [m(0.02), m(0.05)], [m(0.17), m(0.012)], [m(0.18), 0]], F, P, { steps: 24 }), "orange");
     put([x, y, 0.05], `<g ${piece("Cono", "18 cm")}>${s}</g>`);
   };
-  [[2.8, 1.45], [4.0, 1.45], [5.2, 1.45], [6.4, 1.45], [7.6, 1.45]].forEach(([x, y]) => cone(x, y));
+  [[ENTRADA + 0.5, 1.6], [ENTRADA + 0.5, 2.7], [ENTRADA + 0.5, 3.8], [ENTRADA + 0.5, 4.9], [ENTRADA + 0.5, 6.0]].forEach(([x, y]) => cone(x, y));
 
   // ---------- muros cercanos (recortados) encima de todo ----------
   for (const w of sortedWalls(nearWalls)) front.push(wallSvg(w));

@@ -14,5 +14,5 @@ window.DOJO_CONFIG = {
     fotos: "",
     equipo: ""
   },
-  direccion_publica: "https://dojohenkocuu.github.io/"
+  direccion_publica: "https://kalleros.github.io/dojo-henko/"
 };
